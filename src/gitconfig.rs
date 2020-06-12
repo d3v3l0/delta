@@ -88,7 +88,7 @@ mod set_delta_options {
                 $(
                     ($option_name,
                      $field_ident,
-                     $crate::gitconfig::make_git_config_keys_for_delta($option_name, $opt.presets.as_deref()),
+                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
                      &$opt.$field_ident)
                 ),*
             ],
@@ -105,7 +105,7 @@ mod set_delta_options {
                 $(
                     ($option_name,
                      $field_ident,
-                     $crate::gitconfig::make_git_config_keys_for_delta($option_name, $opt.presets.as_deref()),
+                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
                      $opt.$field_ident.as_deref())
                 ),*
             ],
@@ -122,7 +122,7 @@ mod set_delta_options {
                 $(
                     ($option_name,
                      $field_ident,
-                     $crate::gitconfig::make_git_config_keys_for_delta($option_name, $opt.presets.as_deref()),
+                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
                      $opt.$field_ident)
                 ),*
             ],
@@ -139,7 +139,7 @@ mod set_delta_options {
                 $(
                     ($option_name,
                      $field_ident,
-                     $crate::gitconfig::make_git_config_keys_for_delta($option_name, $opt.presets.as_deref()),
+                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
                      $opt.$field_ident)
                 ),*
             ],
@@ -156,7 +156,7 @@ mod set_delta_options {
                 $(
                     ($option_name,
                      $field_ident,
-                     $crate::gitconfig::make_git_config_keys_for_delta($option_name, $opt.presets.as_deref()),
+                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
                      $opt.$field_ident)
                 ),*
             ],
@@ -204,7 +204,7 @@ pub mod git_config_get {
     }
 }
 
-pub fn make_git_config_keys_for_delta(key: &str, presets: Option<&str>) -> Vec<String> {
+pub fn make_git_config_keys(key: &str, presets: Option<&str>) -> Vec<String> {
     match presets {
         Some(presets) => {
             let mut keys = Vec::new();
