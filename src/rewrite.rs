@@ -47,8 +47,8 @@ fn rewrite_options_to_honor_git_config(
         return;
     }
     // --presets must be set first
-    set_delta_options__option_string!([("presets", presets)], opt, arg_matches, git_config);
-    set_delta_options__bool!(
+    set_options__option_string!([("presets", presets)], opt, arg_matches, git_config);
+    set_options__bool!(
         [
             ("light", light),
             ("dark", dark),
@@ -61,13 +61,13 @@ fn rewrite_options_to_honor_git_config(
         arg_matches,
         git_config
     );
-    set_delta_options__f64!(
+    set_options__f64!(
         [("max-line-distance", max_line_distance)],
         opt,
         arg_matches,
         git_config
     );
-    set_delta_options__string!(
+    set_options__string!(
         [
             ("commit-decoration-style", commit_decoration_style),
             ("commit-style", commit_style),
@@ -100,13 +100,13 @@ fn rewrite_options_to_honor_git_config(
         arg_matches,
         git_config
     );
-    set_delta_options__option_string!(
+    set_options__option_string!(
         [("syntax_theme", syntax_theme), ("width", width)],
         opt,
         arg_matches,
         git_config
     );
-    set_delta_options__usize!([("tabs", tab_width)], opt, arg_matches, git_config);
+    set_options__usize!([("tabs", tab_width)], opt, arg_matches, git_config);
 }
 
 fn get_diff_highlight_symbolic_defaults() -> Vec<(String, String)> {

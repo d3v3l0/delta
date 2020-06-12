@@ -1,170 +1,77 @@
 use crate::rewrite;
 
-// TODO: Add tests and parameterize over types more cleanly.
-
 #[macro_use]
 mod set_options {
-    /// If `option_name` was not supplied on the command line, then change its value to one of the
-    /// following in order of precedence:
-    /// 1. The entry for it in the section of gitconfig corresponding to the active presets (if
-    ///    presets disagree over an option value, the preset named last in the presets string has
-    ///    priority).
-    /// 2. The entry for it in the main delta section of gitconfig, if there is one.
-    /// 3. The default value passed to this macro (which may be the current value).
+    // set_options<T> implementations
 
     macro_rules! set_options__string {
-        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
+                let keys = $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref());
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident =
-                        $crate::gitconfig::git_config_get::_string($keys, $git_config)
-                        .unwrap_or_else(|| $default.to_string());
+                        $crate::gitconfig::git_config_get::_string(keys, $git_config)
+                        .unwrap_or_else(|| $opt.$field_ident.clone());
                 };
             )*
-        };
+	    };
     }
 
     macro_rules! set_options__option_string {
-        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
+                let keys = $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref());
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
-                    $opt.$field_ident = $crate::gitconfig::git_config_get::_string($keys, $git_config)
-                                        .or_else(|| $default.map(str::to_string));
+                    $opt.$field_ident = $crate::gitconfig::git_config_get::_string(keys, $git_config)
+                                        .or_else(|| $opt.$field_ident.as_deref().map(str::to_string));
                 };
             )*
-        };
+	    };
     }
 
     macro_rules! set_options__bool {
-        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
+                let keys = $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref());
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident =
-                        $crate::gitconfig::git_config_get::_bool($keys, $git_config)
-                        .unwrap_or_else(|| $default);
+                        $crate::gitconfig::git_config_get::_bool(keys, $git_config)
+                        .unwrap_or_else(|| $opt.$field_ident);
                 };
             )*
-        };
+	    };
     }
 
     macro_rules! set_options__f64 {
-        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
+                let keys = $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref());
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
-                    $opt.$field_ident = match $crate::gitconfig::git_config_get::_string($keys, $git_config) {
-                        Some(s) => s.parse::<f64>().unwrap_or($default),
-                        None => $default,
+                    $opt.$field_ident = match $crate::gitconfig::git_config_get::_string(keys, $git_config) {
+                        Some(s) => s.parse::<f64>().unwrap_or($opt.$field_ident),
+                        None => $opt.$field_ident,
                     }
                 };
             )*
-        };
+	    };
     }
 
     macro_rules! set_options__usize {
-        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
+                let keys = $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref());
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
-                    $opt.$field_ident = match $crate::gitconfig::git_config_get::_i64($keys, $git_config) {
+                    $opt.$field_ident = match $crate::gitconfig::git_config_get::_i64(keys, $git_config) {
                         Some(int) => int as usize,
-                        None => $default,
+                        None => $opt.$field_ident,
                     }
                 };
             )*
-        };
-    }
-}
-
-#[macro_use]
-mod set_delta_options {
-    // set_delta_options<T> implementations
-
-    macro_rules! set_delta_options__string {
-	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
-         $opt:expr, $arg_matches:expr, $git_config:expr) => {
-		    set_options__string!([
-                $(
-                    ($option_name,
-                     $field_ident,
-                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
-                     &$opt.$field_ident)
-                ),*
-            ],
-            $opt,
-            $arg_matches,
-            $git_config);
-	    };
-    }
-
-    macro_rules! set_delta_options__option_string {
-	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
-         $opt:expr, $arg_matches:expr, $git_config:expr) => {
-		    set_options__option_string!([
-                $(
-                    ($option_name,
-                     $field_ident,
-                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
-                     $opt.$field_ident.as_deref())
-                ),*
-            ],
-            $opt,
-            $arg_matches,
-            $git_config);
-	    };
-    }
-
-    macro_rules! set_delta_options__bool {
-	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
-         $opt:expr, $arg_matches:expr, $git_config:expr) => {
-		    set_options__bool!([
-                $(
-                    ($option_name,
-                     $field_ident,
-                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
-                     $opt.$field_ident)
-                ),*
-            ],
-            $opt,
-            $arg_matches,
-            $git_config);
-	    };
-    }
-
-    macro_rules! set_delta_options__f64 {
-	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
-         $opt:expr, $arg_matches:expr, $git_config:expr) => {
-		    set_options__f64!([
-                $(
-                    ($option_name,
-                     $field_ident,
-                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
-                     $opt.$field_ident)
-                ),*
-            ],
-            $opt,
-            $arg_matches,
-            $git_config);
-	    };
-    }
-
-    macro_rules! set_delta_options__usize {
-	    ([$( ($option_name:expr, $field_ident:ident) ),* ],
-         $opt:expr, $arg_matches:expr, $git_config:expr) => {
-		    set_options__usize!([
-                $(
-                    ($option_name,
-                     $field_ident,
-                     $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref()),
-                     $opt.$field_ident)
-                ),*
-            ],
-            $opt,
-            $arg_matches,
-            $git_config);
 	    };
     }
 }
