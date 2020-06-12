@@ -4,7 +4,7 @@ use crate::rewrite;
 
 #[macro_use]
 mod set_options {
-    /// If `opt_name` was not supplied on the command line, then change its value to one of the
+    /// If `option_name` was not supplied on the command line, then change its value to one of the
     /// following in order of precedence:
     /// 1. The entry for it in the section of gitconfig corresponding to the active presets (if
     ///    presets disagree over an option value, the preset named last in the presets string has
@@ -13,10 +13,10 @@ mod set_options {
     /// 3. The default value passed to this macro (which may be the current value).
 
     macro_rules! set_options__string {
-        ([$( ($opt_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
-                if !$crate::config::user_supplied_option($opt_name, $arg_matches) {
+                if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident =
                         $crate::gitconfig::git_config_get::_string($keys, $git_config)
                         .unwrap_or_else(|| $default.to_string());
@@ -26,10 +26,10 @@ mod set_options {
     }
 
     macro_rules! set_options__option_string {
-        ([$( ($opt_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
-                if !$crate::config::user_supplied_option($opt_name, $arg_matches) {
+                if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident = $crate::gitconfig::git_config_get::_string($keys, $git_config)
                                         .or_else(|| $default.map(str::to_string));
                 };
@@ -38,10 +38,10 @@ mod set_options {
     }
 
     macro_rules! set_options__bool {
-        ([$( ($opt_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
-                if !$crate::config::user_supplied_option($opt_name, $arg_matches) {
+                if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident =
                         $crate::gitconfig::git_config_get::_bool($keys, $git_config)
                         .unwrap_or_else(|| $default);
@@ -51,10 +51,10 @@ mod set_options {
     }
 
     macro_rules! set_options__f64 {
-        ([$( ($opt_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
-                if !$crate::config::user_supplied_option($opt_name, $arg_matches) {
+                if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident = match $crate::gitconfig::git_config_get::_string($keys, $git_config) {
                         Some(s) => s.parse::<f64>().unwrap_or($default),
                         None => $default,
@@ -65,10 +65,10 @@ mod set_options {
     }
 
     macro_rules! set_options__usize {
-        ([$( ($opt_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
+        ([$( ($option_name:expr, $field_ident:ident, $keys:expr, $default:expr) ),* ],
          $opt:expr, $arg_matches:expr, $git_config:expr) => {
             $(
-                if !$crate::config::user_supplied_option($opt_name, $arg_matches) {
+                if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident = match $crate::gitconfig::git_config_get::_i64($keys, $git_config) {
                         Some(int) => int as usize,
                         None => $default,
