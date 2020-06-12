@@ -12,7 +12,8 @@ mod set_options {
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident =
                         $crate::gitconfig::git_config_get::_string(keys, $git_config)
-                        .unwrap_or_else(|| $opt.$field_ident.clone());
+                        .unwrap_or_else(|| $crate::gitconfig::get_default::_string($option_name, $opt.presets.as_deref())
+                                           .unwrap_or_else(|| $opt.$field_ident.clone()));
                 };
             )*
 	    };
@@ -25,7 +26,8 @@ mod set_options {
                 let keys = $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref());
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident = $crate::gitconfig::git_config_get::_string(keys, $git_config)
-                                        .or_else(|| $opt.$field_ident.as_deref().map(str::to_string));
+                                        .or_else(|| $crate::gitconfig::get_default::_string($option_name, $opt.presets.as_deref())
+                                                    .or_else(|| $opt.$field_ident.as_deref().map(str::to_string)));
                 };
             )*
 	    };
@@ -39,7 +41,8 @@ mod set_options {
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident =
                         $crate::gitconfig::git_config_get::_bool(keys, $git_config)
-                        .unwrap_or_else(|| $opt.$field_ident);
+                        .unwrap_or_else(|| $crate::gitconfig::get_default::_bool($option_name, $opt.presets.as_deref())
+                                           .unwrap_or($opt.$field_ident));
                 };
             )*
 	    };
@@ -51,9 +54,11 @@ mod set_options {
             $(
                 let keys = $crate::gitconfig::make_git_config_keys($option_name, $opt.presets.as_deref());
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
+                    let get_default = || $crate::gitconfig::get_default::_f64($option_name, $opt.presets.as_deref())
+                                         .unwrap_or($opt.$field_ident);
                     $opt.$field_ident = match $crate::gitconfig::git_config_get::_string(keys, $git_config) {
-                        Some(s) => s.parse::<f64>().unwrap_or($opt.$field_ident),
-                        None => $opt.$field_ident,
+                        Some(s) => s.parse::<f64>().unwrap_or_else(get_default),
+                        None => get_default(),
                     }
                 };
             )*
@@ -68,7 +73,8 @@ mod set_options {
                 if !$crate::config::user_supplied_option($option_name, $arg_matches) {
                     $opt.$field_ident = match $crate::gitconfig::git_config_get::_i64(keys, $git_config) {
                         Some(int) => int as usize,
-                        None => $opt.$field_ident,
+                        None => $crate::gitconfig::get_default::_i64($option_name, $opt.presets.as_deref())
+                                .unwrap_or($opt.$field_ident),
                     }
                 };
             )*
@@ -114,9 +120,9 @@ pub mod git_config_get {
 }
 
 pub fn make_git_config_keys(key: &str, presets: Option<&str>) -> Vec<String> {
-    let preset_symbolic_defaults = rewrite::get_preset_symbolic_defaults();
     match presets {
         Some(presets) => {
+            let preset_symbolic_defaults = rewrite::get_preset_symbolic_defaults();
             let mut keys = Vec::new();
             for preset in presets.split_whitespace().rev() {
                 // A delta key for this preset has precedence over a preset default.
@@ -131,6 +137,27 @@ pub fn make_git_config_keys(key: &str, presets: Option<&str>) -> Vec<String> {
             keys
         }
         None => vec![format!("delta.{}", key)],
+    }
+}
+
+mod get_default {
+    use crate::rewrite;
+
+    pub fn _string(option_name: &str, presets: Option<&str>) -> Option<String> {
+        match presets {
+            Some(presets) => {
+                let preset_defaults = rewrite::get_preset_defaults();
+                for preset in presets.split_whitespace().rev() {
+                    if let Some(defaults) = preset_defaults.get(preset) {
+                        if let Some(value) = defaults.get(option_name) {
+                            return Some(value.to_string());
+                        }
+                    }
+                }
+                None
+            }
+            None => None,
+        }
     }
 }
 

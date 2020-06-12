@@ -123,11 +123,40 @@ fn get_diff_highlight_symbolic_defaults() -> Vec<(String, String)> {
     .collect()
 }
 
+fn get_diff_highlight_defaults(bold: bool) -> Vec<(String, String)> {
+    vec![
+        ("minus-style", if bold { "bold red" } else { "red" }),
+        ("minus-non-emph-style", &opt.minus_style),
+        ("minus-emph-style", &format!("{} reverse", opt.minus_style)),
+        ("zero-style", "normal"),
+        ("plus-style", if bold { "bold green" } else { "green" }),
+        ("plus-non-emph-style", &opt.plus_style),
+        ("plus-emph-style", &format!("{} reverse", opt.plus_style)),
+    ]
+    .iter()
+    .map(|(k, v)| (k.to_string(), v.to_string()))
+    .collect()
+}
+
 fn get_diff_so_fancy_symbolic_defaults() -> Vec<(String, String)> {
     let mut defaults = get_diff_highlight_symbolic_defaults();
     defaults.extend(
         [
             ("commit-style", "color.diff.commit"),
+            ("file-style", "color.diff.meta"),
+            ("hunk-header-style", "color.diff.frag"),
+        ]
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string())),
+    );
+    defaults
+}
+
+fn get_diff_so_fancy_defaults() -> Vec<(String, String)> {
+    let mut defaults = get_diff_highlight_symbolic_defaults();
+    defaults.extend(
+        [
+            ("commit-style", ""),
             ("file-style", "color.diff.meta"),
             ("hunk-header-style", "color.diff.frag"),
         ]
@@ -161,6 +190,10 @@ pub fn get_preset_symbolic_defaults() -> HashMap<String, HashMap<String, String>
     .iter()
     .map(|x| x.clone())
     .collect()
+}
+
+pub fn get_preset_defaults() -> HashMap<String, HashMap<String, String>> {
+    [].iter().map(|x| x.clone()).collect()
 }
 
 /// Implement --navigate
